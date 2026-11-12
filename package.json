@@ -1,0 +1,8 @@
+{
+  "name": "tutorly-tooling",
+  "private": true,
+  "version": "0.1.0",
+  "devDependencies": {
+    "supabase": "3.1.0"
+  }
+}

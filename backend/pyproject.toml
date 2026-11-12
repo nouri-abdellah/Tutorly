@@ -5,6 +5,8 @@ description = "Tutorly backend application skeleton"
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "fastapi==0.162.5",
+    "httpx2==2.16.0",
+    "pyjwt[crypto]==2.15.1",
     "uvicorn==0.54.0",
 ]
 
@@ -12,11 +14,13 @@ dependencies = [
 package = false
 
 [tool.pytest.ini_options]
-pythonpath = ["."]
+pythonpath = [".", "tests"]
 testpaths = ["tests"]
+markers = [
+    "integration: requires a running local Supabase stack",
+]
 
 [dependency-groups]
 dev = [
-    "httpx2==2.16.0",
     "pytest==9.2.0",
 ]

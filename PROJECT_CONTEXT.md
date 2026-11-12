@@ -112,8 +112,9 @@ The AI layer should later be added through backend application services and prov
 | Architecture | CONFIRMED | Modular monolith |
 | API style | CONFIRMED | REST |
 | Streaming | PROPOSED | SSE only where incremental output materially improves a later feature |
+| Local database migrations | CONFIRMED | Supabase CLI SQL migrations (CLI 3.1.0 implemented locally) |
 
-Runtime versions, package managers, migration tooling, hosting provider, region, CI/CD, and deployment topology require approval; see the open decisions register.
+Runtime versions, package managers, hosting provider, region, CI/CD, and deployment topology still require approval; see the open decisions register. Supabase CLI is confirmed for local database migrations and local Supabase development.
 
 # 4. Product principles
 
@@ -159,6 +160,8 @@ For MVP 1.0, steps 3–6 and curated exercise practice are intentionally simplif
 6. Domain rules determine the operation and whether deterministic verification applies.
 7. Infrastructure adapters access Supabase or the math engine.
 8. The frontend presents the result, including uncertainty where applicable.
+
+**IMPLEMENTED locally in Phase 1:** steps 1–4 and 7 for `GET /api/v1/me`, using Supabase Auth, JWKS token verification, and a request-scoped PostgREST client. The full flow remains PROPOSED for later modules.
 
 Later, AI and storage adapters may be added to this flow. Browser code must never call DeepSeek directly.
 
@@ -314,6 +317,8 @@ Ordinary student-facing database operations must use a request-scoped Supabase c
 
 The Service Role key bypasses RLS. It is reserved for isolated privileged system/admin operations, not ordinary student requests. Any privileged operation must independently enforce authorization.
 
+**IMPLEMENTED locally in Phase 1:** the `profiles` table has RLS enabled. Authenticated students have only `SELECT`, with an ownership policy requiring `auth.uid() = id`. No profile fields are student-editable, so there is no student `UPDATE` grant or policy; the `updated_at` trigger remains for future trusted database updates. `anon` and `service_role` have no profile table privileges. The FastAPI `/api/v1/me` path uses the public anon key plus the student's JWT, and the Service Role key is absent from backend application configuration.
+
 ## 14.2 Transaction boundaries — CONFIRMED
 
 Do not call external APIs or run CPU-intensive grading while a database transaction is open. Use a short read, perform grading/external work outside the transaction, then perform a short write. Use a single atomic database operation or a narrow RPC for a logical multi-row write where appropriate.
@@ -324,7 +329,9 @@ Running SymPy in a separate worker process with resource limits is a separate im
 
 # 15. Authentication and student privacy
 
-Supabase Auth is confirmed. Email/password is a proposed MVP sign-in option, not a final decision.
+Supabase Auth is confirmed. Email/password is **CONFIRMED for MVP 1.0 Phase 1 and IMPLEMENTED locally**.
+
+The approved Phase 1 profile schema is minimal: `id uuid` (ownership, referencing `auth.users(id)`), `created_at`, and `updated_at`. No personal profile fields are approved or implemented. The Auth-user trigger creates exactly one profile, and there is no student-facing profile editing endpoint until editable fields are approved.
 
 Because Tutorly serves school students, before public launch resolve:
 - Applicable privacy and child-protection obligations in Algeria and any later target markets.
@@ -384,6 +391,8 @@ REST is CONFIRMED. The following are PROPOSED conventions for MVP 1.0:
 - Paginate growing collections.
 - Publish OpenAPI contracts.
 
+**IMPLEMENTED locally in Phase 1:** `GET /health` and authenticated `GET /api/v1/me`. The profile endpoint derives identity only from the verified JWT and rejects missing or invalid bearer credentials with 401. Phase 1 error responses use `{"error": {"code", "message_key", "request_id"}}`. There is no `PATCH /api/v1/me` while no editable profile fields are approved.
+
 Exact endpoint paths and payloads should be designed with each feature, not invented speculatively. SSE remains deferred until a feature needs incremental output.
 
 # 19. Content governance and versioning
@@ -422,7 +431,9 @@ Diagnostic length and a small grading regression set are not evidence of full cu
 
 No production hosting provider or region is confirmed.
 
-**PROPOSED MVP toolchain:** Python 3.12, `uv`, Ruff, mypy, pytest; Vite, TypeScript strict mode, Tailwind, Vitest, ESLint; GitHub Actions; Alembic for versioned database migrations; Supabase for managed database/auth/storage; one backend PaaS and one static frontend host.
+**PROPOSED MVP toolchain:** Python 3.12, `uv`, Ruff, mypy, pytest; Vite, TypeScript strict mode, Tailwind, Vitest, ESLint; GitHub Actions; Supabase for managed database/auth/storage; one backend PaaS and one static frontend host.
+
+**CONFIRMED and IMPLEMENTED locally:** Supabase CLI for local database migrations and local Supabase development. The repository pins Supabase CLI `3.1.0` as a root development dependency. Alembic is not used for the confirmed local migration path.
 
 These are recommendations, not approved decisions. Confirm compatibility with the existing repository and the owner's environment before adding dependencies or creating deployment resources.
 
@@ -441,11 +452,11 @@ Use separate local/development, test/staging, and production environments. Never
 | OD-07 | SymPy process isolation and resource-limit implementation | PROPOSED; separate from confirmed transaction rule |
 | OD-08 | Exact attempt schema, retention, and deletion behaviour | PROPOSED schema principles; exact schema OPEN |
 | OD-09 | Curriculum/exercise version schema and publication workflow | PROPOSED |
-| OD-10 | API error envelope and endpoint contracts | PROPOSED |
-| OD-11 | Authentication method and minimum profile fields | OPEN; email/password is proposed |
+| OD-10 | API error envelope and endpoint contracts | PROPOSED overall; Phase 1 implements `GET /api/v1/me` and a narrower `{error: {code, message_key, request_id}}` envelope |
+| OD-11 | Authentication method and minimum profile fields | CONFIRMED and IMPLEMENTED locally for Phase 1: Supabase email/password; profile fields limited to `id`, `created_at`, `updated_at` |
 | OD-12 | Age gate, guardian consent, privacy/legal review | OPEN; public-launch gate |
 | OD-13 | Arabic terminology, numeral conventions, and math rendering | PROPOSED defaults: MSA, Western digits, LTR math isolation |
-| OD-14 | Migration tooling and runtime/package versions | OPEN; Alembic/toolchain proposed |
+| OD-14 | Migration tooling and runtime/package versions | Supabase CLI CONFIRMED and implemented for local migrations; runtime/package versions and non-local migration tooling remain OPEN/PROPOSED |
 | OD-15 | Hosting, region, CI/CD, backups, and monitoring | OPEN |
 | OD-16 | AI model/version, budgets, rate limits, fallback, and cost ceiling | OPEN; long-term layer |
 | OD-17 | Image/OCR provider, formats, limits, retention, and confirmation UX | OPEN; deferred |
@@ -473,7 +484,11 @@ Use separate local/development, test/staging, and production environments. Never
 - Define profile ownership, RLS, and migrations.
 - Add cross-user access tests.
 
-**Exit:** authenticated students can access only permitted records.
+**IMPLEMENTED locally (2026-11-12):** Supabase email/password sign-up/sign-in, Arabic RTL auth/profile UI, backend JWT verification with exactly one configured mode (local ES256/JWKS; HS256 secret mode supported for symmetric deployments), request-scoped PostgREST access using the anon key and student JWT, a minimal `profiles` migration with Auth-user creation and `updated_at` triggers, select-only student profile access enforced by RLS, and authenticated `GET /api/v1/me`. No profile PATCH endpoint exists because no editable fields are approved.
+
+**Verification:** 23 backend unit/API tests passed; 11 real local Auth/PostgREST/RLS integration tests passed with two independent users, including a FastAPI request through the real local JWKS and PostgREST path. Effective grants and policies were inspected. Frontend typecheck/build passed and the bundle contained no Service Role material.
+
+**Exit:** met locally for the implemented `profiles` scope; any later student-owned table must add its own RLS, grants, and cross-user tests. No remote/production Supabase project was used.
 
 ## Phase 2 — Curriculum, exercises, and math core
 - Confirm and import a small reviewed curriculum subset.
@@ -532,3 +547,4 @@ Use separate local/development, test/staging, and production environments. Never
 |---|---|
 | 2026-11-12 | Initial specification assembled from project discussions. |
 | 2026-11-12 | Separated long-term Product Vision from MVP 1.0; clarified deterministic first release, security/transaction rules, attempt ownership/idempotency, grading uncertainty, provisional mastery, versioning, privacy gates, and phased roadmap. |
+| 2026-11-12 | Implemented and verified Phase 1 locally: Supabase CLI migrations, minimal `profiles` with RLS, email/password Auth, JWT/JWKS verification, request-scoped PostgREST access, `GET /api/v1/me`, Arabic RTL auth/profile UI, and real two-user RLS integration tests. |
