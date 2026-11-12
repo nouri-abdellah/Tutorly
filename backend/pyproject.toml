@@ -1,0 +1,22 @@
+[project]
+name = "tutorly-backend"
+version = "0.1.0"
+description = "Tutorly backend application skeleton"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "fastapi==0.162.5",
+    "uvicorn==0.54.0",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[dependency-groups]
+dev = [
+    "httpx2==2.16.0",
+    "pytest==9.2.0",
+]

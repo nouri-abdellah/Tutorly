@@ -4,7 +4,7 @@ Tutorly is intended to become an Arabic-first, AI-powered personalized mathemati
 
 ## Current status
 
-**Phase 0.1 — repository baseline.** The repository currently contains project documentation and baseline repository conventions only. No backend or frontend application code exists yet, and the project is not runnable at this stage.
+**Phase 0.2 — minimal application skeleton.** A minimal FastAPI backend with a `GET /health` endpoint and a minimal React + TypeScript + Vite Arabic RTL landing page are available. The applications are not connected to Supabase, an AI provider, or a database, and contain no student functionality.
 
 MVP 1.0 is a deterministic learning-and-personalization release: authentication, a limited reviewed diagnostic, a rule-based learning plan, curated exercises with deterministic grading for supported answer types, and skill-level progress. AI tutoring chat, guided learning, image input, and AI-generated exercises are deferred.
 
@@ -17,14 +17,45 @@ MVP 1.0 is a deterministic learning-and-personalization release: authentication,
 
 ## Technology direction
 
-- Frontend: React + TypeScript + Tailwind CSS (planned)
-- Backend: Python + FastAPI (planned)
+- Frontend: React + TypeScript + Tailwind CSS + Vite
+- Backend: Python 3.12 + FastAPI
 - Database, authentication, and storage: Supabase (planned)
 - Mathematical verification: Python + SymPy for supported answer types (planned)
 - Architecture: modular monolith with a REST API (planned)
 
-Runtime versions, package managers, migration tooling, hosting, and CI/CD are not yet confirmed.
+The scaffold uses Python 3.12 managed by `uv` and Node.js 24 with `npm`. Migration tooling, hosting, and CI/CD are not yet configured.
 
 ## Development
 
-No local setup or run instructions exist yet. They will be added when the backend and frontend scaffolds are established in a later Phase 0 task.
+### Backend
+
+```bash
+cd backend
+uv sync
+uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+The health endpoint is available at `http://127.0.0.1:8000/health`.
+
+Run the backend tests with:
+
+```bash
+cd backend
+uv run pytest
+```
+
+### Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Check and build the frontend with:
+
+```bash
+cd frontend
+npm run typecheck
+npm run build
+```
