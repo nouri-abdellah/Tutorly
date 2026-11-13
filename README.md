@@ -4,16 +4,17 @@ Tutorly is intended to become an Arabic-first, AI-powered personalized mathemati
 
 ## Current status
 
-**Phase 1 — database and Supabase identity foundation (local).** The repository now includes:
+**Phase 2.1 — curriculum database foundation (local).** The repository now includes:
 
-- A local Supabase project with one version-controlled `profiles` migration.
+- A local Supabase project with Phase 1 profile and Phase 2.1 curriculum migrations.
 - Supabase Auth email/password sign-up and sign-in.
 - Backend JWT verification and a request-scoped PostgREST client.
 - Row Level Security (RLS) for student-owned profiles.
 - `GET /api/v1/me`.
 - A minimal Arabic RTL account and profile screen.
+- Versioned curriculum, unit, topic, skill, source, topic-skill, and prerequisite tables.
 
-There are no curriculum, exercise, diagnostic, learning-plan, mastery, grading, AI, or deployment features yet. The application is configured for **local Supabase only**. Do not link or migrate a remote/production project during this phase.
+There is no reviewed curriculum content, seed data, exercise bank, diagnostic, learning plan, mastery, grading, AI, or deployment feature yet. The curriculum schema is ready for reviewed imports, but the actual Algerian curriculum remains an open content decision. The application is configured for **local Supabase only**. Do not link or migrate a remote/production project during this phase.
 
 MVP 1.0 is a deterministic learning-and-personalization release: authentication, a limited reviewed diagnostic, a rule-based learning plan, curated exercises with deterministic grading for supported answer types, and skill-level progress. AI tutoring chat, guided learning, image input, and AI-generated exercises are deferred.
 
@@ -201,7 +202,7 @@ This phase does not claim that browser token storage is inherently secure.
 
 ## RLS and database security model
 
-The single migration creates `public.profiles`:
+The Phase 1 migration creates `public.profiles`:
 
 - `id uuid` primary key, referencing `auth.users(id)` with `ON DELETE CASCADE`.
 - `created_at timestamptz not null default now()`.
@@ -222,6 +223,43 @@ Anonymous users have no profile table privileges and no policies. A student cann
 
 RLS is tested through real local Auth and PostgREST requests with two independent users, not through mocks.
 
+### Curriculum foundation (Phase 2.1)
+
+The curriculum migration adds these tables:
+
+| Table | Purpose |
+|---|---|
+| `curricula` | Curriculum definition for a country, grade level, stream, and subject. |
+| `curriculum_versions` | Academic-year version with `draft`, `reviewed`, `published`, or `archived` status. |
+| `curriculum_sources` | Provenance metadata for curriculum documents; no PDF binaries are stored. |
+| `curriculum_units` | Ordered units inside one curriculum version. |
+| `topics` | Ordered lessons/topics inside one unit. |
+| `skills` | Independently assessable skills inside one curriculum version. |
+| `topic_skills` | Many-to-many links between topics and skills. |
+| `skill_prerequisites` | Directed prerequisite edges between skills. |
+
+Relationships and integrity:
+
+- Units belong to a curriculum version; topics belong to a unit; skills belong to a curriculum version.
+- Topic-skill links and prerequisite edges must connect records in the same curriculum version.
+- A unit, topic, or skill may reference a curriculum source only when the source belongs to the same curriculum version. A `NULL` source reference remains valid. This is enforced on insert and when `source_id` changes.
+- Structural parent links are immutable. Reassigning a unit, topic, skill, or relationship to another parent/version is rejected.
+- Display order is unique within a version for units and within a unit for topics.
+- Skill codes are unique within a curriculum version. `difficulty_level` is currently constrained to `1..5` as a provisional scale pending owner approval and has not been validated against the official curriculum.
+- Deleting referenced curriculum records is prevented with `ON DELETE RESTRICT`; dependent rows must be handled explicitly.
+- The `updated_at` fields are maintained by a trigger. A separate trigger rejects direct and indirect prerequisite cycles.
+- Prerequisite writes take a per-curriculum-version advisory transaction lock so concurrent transactions cannot both miss an edge and jointly create a cycle. Integration tests cover cycle-creating inserts, cycle-creating updates, and concurrent opposite edges.
+
+Visibility and grants:
+
+- Anonymous and authenticated users receive only `SELECT` on curriculum tables.
+- RLS exposes only rows whose curriculum version has `status = 'published'`. Draft, reviewed, and archived content is hidden.
+- `curricula` is visible only when it has at least one published version.
+- Students cannot insert, update, delete, publish, or change prerequisite relationships.
+- The Service Role has privileged DML for trusted imports, administration, and integration-test setup. It is not used in student request paths and is not part of backend application configuration.
+
+No curriculum units, lessons, skills, or prerequisite facts are seeded. Only synthetic integration-test data is created temporarily and deleted by the test.
+
 ## Tests
 
 ### Backend unit and API tests
@@ -239,7 +277,9 @@ Start local Supabase first, then run:
 ./scripts/run-local-rls-tests.sh
 ```
 
-The script reads the local `API_URL`, `ANON_KEY`, and `SERVICE_ROLE_KEY` from `npx supabase status -o env`. The Service Role key is used only by the test harness to create and delete the two temporary Auth users. It is not part of backend application configuration or student request paths. The FastAPI integration case derives the local JWKS URL from `API_URL` and verifies the real local ES256 signing key; no symmetric fallback secret is configured.
+The script reads the local `API_URL`, `ANON_KEY`, and `SERVICE_ROLE_KEY` from `npx supabase status -o env`. The Service Role key is used only by the test harness to create and delete temporary Auth users and curriculum fixtures. It is not part of backend application configuration or student request paths. The FastAPI integration case derives the local JWKS URL from `API_URL` and verifies the real local ES256 signing key; no symmetric fallback secret is configured.
+
+The real local integration suite includes the Phase 1 profile/RLS tests and the Phase 2.1 curriculum tests: table creation and linking, duplicate constraints, cross-version source/relationship rejection, prerequisite cycle inserts and updates, concurrent opposite prerequisite inserts, published visibility, hidden unpublished content, and student write denial.
 
 The script refuses non-local URLs and exits with an error if it cannot read the local credentials. The pytest integration module also skips when those credentials are not configured. A skipped test is not evidence that RLS works; run the script against the local stack and report the actual result.
 
@@ -272,7 +312,7 @@ Hosting, region, CI/CD, deployment topology, and production migration tooling be
 
 Not implemented in this phase:
 
-- Curriculum, topics, skills, prerequisites.
+- Reviewed curriculum content, curriculum seed data, and curriculum UI.
 - Exercises, attempts, diagnostics, learning plans, mastery, or progress.
 - SymPy grading or any answer checking.
 - DeepSeek/AI integrations or tutoring chat.

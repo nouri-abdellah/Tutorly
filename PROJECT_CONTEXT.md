@@ -187,11 +187,14 @@ Later modules may include `tutoring`, `guided_learning`, `ai`, `uploads`, `trans
 
 Represent the approved mathematics curriculum as versioned curriculum versions, topics/units, skills, and prerequisite relationships.
 
+**IMPLEMENTED locally in Phase 2.1 (2026-11-13):** schema foundation only. The database has `curricula`, `curriculum_versions`, `curriculum_sources`, `curriculum_units`, `topics`, `skills`, `topic_skills`, and `skill_prerequisites`. Only published versions are readable by students. Cross-version links, cross-version source references, and prerequisite cycles are rejected at the database level. No actual curriculum content is seeded or approved by this implementation.
+
 **OPEN:**
 - Authoritative source for the Experimental Sciences mathematics curriculum.
 - Exact taxonomy, coverage, official wording, and ordering.
 - Prerequisite graph and subject-expert validation.
 - Exercise coverage and difficulty labels.
+- Final `difficulty_level` scale; the implemented `1..5` range is provisional and has not been validated against the official curriculum.
 
 Do not invent official curriculum facts. MVP 1.0 should import only a small subset whose source and correctness have been checked by the owner or a qualified mathematics reviewer. Clearly label the subset as limited; do not imply full curriculum coverage.
 
@@ -407,6 +410,8 @@ Exact endpoint paths and payloads should be designed with each feature, not inve
 
 The content reviewer/owner process, source permissions, and publication criteria require owner approval. Past-paper material must not be used without checking source reliability and licensing.
 
+**IMPLEMENTED locally in Phase 2.1:** curriculum versions have `draft`, `reviewed`, `published`, and `archived` states. RLS exposes only published versions and their child rows to `anon` and `authenticated`. Those roles have `SELECT` only; no student or anonymous write path exists. Service Role retains privileged DML for trusted content imports, administration, and test setup, never for ordinary student requests. Structural parent links are immutable, cross-version links and cross-version source references are rejected, and prerequisite cycles are rejected with database triggers, including a concurrent-write safeguard.
+
 # 20. Testing and educational evaluation
 
 MVP test categories:
@@ -451,7 +456,7 @@ Use separate local/development, test/staging, and production environments. Never
 | OD-06 | Detailed equivalence rules and tolerances for each supported answer type | OPEN; required before each checker ships |
 | OD-07 | SymPy process isolation and resource-limit implementation | PROPOSED; separate from confirmed transaction rule |
 | OD-08 | Exact attempt schema, retention, and deletion behaviour | PROPOSED schema principles; exact schema OPEN |
-| OD-09 | Curriculum/exercise version schema and publication workflow | PROPOSED |
+| OD-09 | Curriculum/exercise version schema and publication workflow | Phase 2.1 schema foundation IMPLEMENTED locally; actual content, provenance, difficulty-scale approval, and publication workflow remain OPEN/PROPOSED |
 | OD-10 | API error envelope and endpoint contracts | PROPOSED overall; Phase 1 implements `GET /api/v1/me` and a narrower `{error: {code, message_key, request_id}}` envelope |
 | OD-11 | Authentication method and minimum profile fields | CONFIRMED and IMPLEMENTED locally for Phase 1: Supabase email/password; profile fields limited to `id`, `created_at`, `updated_at` |
 | OD-12 | Age gate, guardian consent, privacy/legal review | OPEN; public-launch gate |
@@ -497,7 +502,14 @@ Use separate local/development, test/staging, and production environments. Never
 - Implement restricted deterministic grading.
 - Build the initial math regression suite.
 
-**Exit:** supported answers are checked within documented limits; uncertain cases are `unverifiable`.
+### Phase 2.1 — Curriculum database foundation
+**IMPLEMENTED locally (2026-11-13):** curriculum, version, source, unit, topic, skill, topic-skill, and skill-prerequisite tables with integrity constraints, publication RLS, select-only student/anon grants, immutable structural links, cross-version relationship and source rejection, and prerequisite cycle detection. No curriculum content is seeded.
+
+**Verification:** 28 backend unit/API tests passed; 29 real local Auth/PostgREST/RLS integration tests passed, comprising 18 curriculum tests and 11 Phase 1 profile tests. The curriculum tests cover creation, constraints, source-version consistency, direct/indirect/update cycle rejection, concurrent opposite prerequisite inserts, published visibility, hidden unpublished content, and write denial. Frontend typecheck/build passed. Grants and policies were inspected.
+
+**Exit:** met locally for the database foundation only; reviewed content, exercises, grading, and math core remain pending.
+
+**Exit (Phase 2 overall):** supported answers are checked within documented limits; uncertain cases are `unverifiable`.
 
 ## Phase 3 — Practice and attempt evidence
 - Serve curated exercises.
@@ -548,3 +560,5 @@ Use separate local/development, test/staging, and production environments. Never
 | 2026-11-12 | Initial specification assembled from project discussions. |
 | 2026-11-12 | Separated long-term Product Vision from MVP 1.0; clarified deterministic first release, security/transaction rules, attempt ownership/idempotency, grading uncertainty, provisional mastery, versioning, privacy gates, and phased roadmap. |
 | 2026-11-12 | Implemented and verified Phase 1 locally: Supabase CLI migrations, minimal `profiles` with RLS, email/password Auth, JWT/JWKS verification, request-scoped PostgREST access, `GET /api/v1/me`, Arabic RTL auth/profile UI, and real two-user RLS integration tests. |
+| 2026-11-13 | Implemented and verified Phase 2.1 curriculum database foundation locally: versioned curriculum tables, provenance, units/topics/skills, topic-skill links, prerequisite graph with cycle detection, published-only RLS, select-only student grants, and real constraint/visibility tests. No curriculum content seeded. |
+| 2026-11-13 | Targeted Phase 2.1 integrity review: enforced same-version curriculum source references on insert/update, added exact-column RLS assertions, cycle-creating update coverage, and a real concurrent opposite-edge prerequisite test. No RLS/grant changes. |
