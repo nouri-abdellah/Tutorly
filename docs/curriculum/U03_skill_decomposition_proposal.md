@@ -2,19 +2,20 @@
 
 ## 1. Document status
 
-- **Status:**APPROVED — PROVISIONAL skill decomposition — documentation only
+- **Status:** APPROVED — PROVISIONAL skill decomposition — documentation only
 - **Unit:** U03 — الدالة الأسية الطبيعية — provisional Arabic title, official title OPEN
 - **Scope:** U03 only
 - **Topic provenance:** `user_supplied_provisional`
 - **Skill provenance:** `proposed_inferred_from_user_supplied_provisional`
 - **Official verification:** OPEN — not independently verified as an official syllabus
 - **Arabic terminology:** PROVISIONAL — pending curriculum terminology review
+- **U03 skill decomposition:** APPROVED — PROVISIONAL — owner-approved as a provisional decomposition, not final or officially verified
 - **D7:** OPEN — inclusion and placement of `EXP_GENERAL_BASE` remain conditional
 - **Database seeding:** NOT AUTHORIZED
 - **Skill prerequisite edges:** NOT CREATED in the database
 - **U01, U02, U04 and later units:** NOT MODIFIED
 
-This document proposes a provisional decomposition of U03 into 19 skills. It does not create skills, seed data, database rows, prerequisite edges, APIs, grading logic, or exercises. It is not approved as official curriculum content.
+This document records the approved provisional decomposition of U03 into 19 skills. It does not create skills, seed data, database rows, prerequisite edges, APIs, grading logic, or exercises. It is not approved as official curriculum content.
 
 ## 2. Sources and scope
 
@@ -46,7 +47,7 @@ Excluded:
 
 The five U03 topics are part of the owner-accepted provisional curriculum baseline. They are not officially verified syllabus content.
 
-This document is a **PROPOSED — PROVISIONAL** skill decomposition. The 19 skill codes, titles, descriptions, outcomes, evidence requirements, and prerequisite relationships require owner and mathematics review.
+This document is an **APPROVED — PROVISIONAL** skill decomposition. The owner has approved the 19 skill codes, titles, descriptions, outcomes, evidence requirements, and prerequisite relationships as a provisional decomposition. This approval does not confirm official curriculum content, does not resolve the OPEN items, and does not authorize database seeding or prerequisite rows.
 
 The only direct curriculum provenance in this document is the topic-level provenance `user_supplied_provisional`. Skill boundaries and prerequisites are educational decomposition and are marked as inferred. No prerequisite is presented as a direct statement from the supplied curriculum.
 
@@ -456,3 +457,4 @@ The next step requires separate approval.
 | 2026-11-14 | Mathematics-review revision: restricted `EXP_EQUATIONS_S03` to positive roots convertible without an unapproved logarithm and `EXP_EQUATIONS_S04` to boundaries convertible without logarithms or supplied logarithmic values; both preserve general logarithm-dependent cases as OPEN. |
 | 2026-11-14 | Reclassified `EXP_CALCULUS_S01 → EXP_COMPOSITE_S02` from hard to conditional because the outer derivative rule may be supplied directly; the hard graph now has zero edges and the conditional graph has 21 references. |
 | 2026-11-14 | Made the `EXP_CALCULUS_S04` conditions explicit: fixed real `n`, `x -> +infinity`, and sufficiently large positive `x`; official scope remains OPEN. |
+| 2026-11-14 | Owner approved the U03 skill decomposition as APPROVED — PROVISIONAL; official verification, Arabic terminology, D7, and database authorization remain unresolved. |
